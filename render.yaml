@@ -25,7 +25,7 @@ services:
     # Render names plans after the instance size, not "starter"/"standard" --
     # 0.5c-512mb is the smallest paid one. `free` is the only other value that
     # makes sense here; anything larger is wasted on four cardholders.
-    plan: free
+    plan: 0.5c-512mb
     buildCommand: npm ci
     startCommand: node src/server.js
     # Answers "is the process up" without touching the database, so a database
