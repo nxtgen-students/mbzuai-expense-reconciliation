@@ -97,7 +97,7 @@ services:
       # this line to match.
       - type: rewrite
         source: /api/*
-        destination: https://mbzuai-reconciliation-api.onrender.com/api/*
+        destination: https://mbzuai-reconciliation-api-8onu.onrender.com/api/*
 
       # Single-page app fallback. React Router owns the URL, so a browser
       # refresh on /manager/transactions must return index.html rather than a
