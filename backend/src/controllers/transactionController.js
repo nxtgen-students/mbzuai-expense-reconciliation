@@ -570,6 +570,35 @@ const updateTransaction = async (req, res) => {
       });
     }
 
+    // A corrected purchase date can land in a different fortnight, and the
+    // period is what every reconciliation query filters on -- not the date. So
+    // a date edit that does not move the period files the transaction under a
+    // period its own date falls outside: the manager then picks the period the
+    // date belongs to and the transaction is not there, with nothing on screen
+    // to explain why. Recompute it from the new date, exactly as submission
+    // does, creating the period if that fortnight has never been seen before.
+    if (fieldsToUpdate.purchase_date) {
+      // calculatePeriodDates builds `${value}T00:00:00Z`, so it needs a bare
+      // YYYY-MM-DD. The edit form sends exactly that, but an API client
+      // sending a full timestamp would otherwise produce an invalid date and
+      // fail the whole edit -- take the calendar part and carry on.
+      const period = await getOrCreateReconciliationPeriod(
+        String(fieldsToUpdate.purchase_date).slice(0, 10)
+      );
+
+      if (period.reconciliation_period_id !== oldTransaction.reconciliation_period_id) {
+        fieldsToUpdate.reconciliation_period_id = period.reconciliation_period_id;
+        // Recorded in the audit trail like any other change: moving a
+        // transaction between reconciliation periods moves money between
+        // finance submissions, so it must not happen invisibly.
+        auditEntries.push({
+          field_name: "reconciliation_period_id",
+          old_value: oldTransaction.reconciliation_period_id,
+          new_value: period.reconciliation_period_id,
+        });
+      }
+    }
+
     const setClause = Object.keys(fieldsToUpdate)
       .map((field, index) => `${field} = $${index + 1}`)
       .join(", ");
