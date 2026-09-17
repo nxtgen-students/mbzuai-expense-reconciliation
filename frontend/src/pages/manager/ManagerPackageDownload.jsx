@@ -65,7 +65,17 @@ export default function ManagerPackageDownload() {
         },
       })
       .then((r) => setPreview(r.data.preview))
-      .catch(() => setPreview(null))
+      // A swallowed failure here is what hid a total outage: the request was
+      // 400ing on every cardholder and every period, and the page rendered
+      // exactly as it does for a period that genuinely has no transactions.
+      // "The request failed" and "there is nothing here" must never look alike.
+      .catch((err) => {
+        setPreview(null);
+        setError(
+          err.response?.data?.message ??
+            "Could not load the package contents for this cardholder and period."
+        );
+      })
       .finally(() => setPreviewLoading(false));
   }, [cardholderId, periodId]);
 
@@ -171,6 +181,21 @@ export default function ManagerPackageDownload() {
 
       {previewLoading && (
         <p className="mt-6 text-sm text-mbzuai-navy/50 animate-pulse">Loading period summary…</p>
+      )}
+
+      {/* Failure banner. Rendered OUTSIDE the preview block on purpose: the
+          error state below only renders when a preview exists, so a request
+          that fails -- the case that leaves preview null -- could never show
+          it. That is precisely how this failed silently. */}
+      {error && !preview && !previewLoading && !done && (
+        <div className="mt-6 max-w-2xl rounded-xl border border-red-200 bg-red-50 p-4">
+          <p className="text-sm font-semibold text-red-800">Could not load this period</p>
+          <p className="mt-0.5 text-sm text-red-700">{error}</p>
+          <p className="mt-1.5 text-xs text-red-600">
+            This is a failure to load, not an empty period. The transactions may
+            well be there.
+          </p>
+        </div>
       )}
 
       {/* preview */}

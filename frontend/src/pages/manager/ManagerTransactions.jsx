@@ -130,6 +130,22 @@ export default function ManagerTransactions() {
       setModalFlags((prev) =>
         prev.map((f) => (f.flagId === flagId ? res.data.flag : f))
       );
+
+      // Resolving the LAST flag moves the transaction to 'reviewed' on the
+      // server. Reflect it here or the row keeps its amber badge until a
+      // reload, which reads as "the resolve did nothing".
+      const newStatus = res.data.transactionStatus;
+      if (newStatus) {
+        const txId = selectedTransaction?.transactionId;
+        setTransactions((prev) =>
+          prev.map((t) =>
+            t.transactionId === txId ? { ...t, status: newStatus } : t
+          )
+        );
+        setSelectedTransaction((prev) =>
+          prev ? { ...prev, status: newStatus } : prev
+        );
+      }
     } catch (err) {
       console.error("Resolve flag failed:", err);
     } finally {
